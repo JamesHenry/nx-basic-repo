@@ -263,20 +263,71 @@ Valid values are: ${validReleaseVersionPrefixes
       return false;
     }
 
+    let bumped = false;
+
     const firstProject = releaseGroup.projects[0];
     const bumpType = await this.determineVersionBumpForProject(
       releaseGroup,
       firstProject
     );
+    console.log({ firstProject, bumpType });
 
     if (bumpType === 'none') {
-      return false;
+      // No direct bump for this group, but we may still need to bump if a dependency group has been bumped
+      let bumpedByDependency = false;
+
+      // Iterate through each project in the release group
+      for (const project of releaseGroup.projects) {
+        const dependencies = this.projectGraph.dependencies[project] || [];
+        for (const dep of dependencies) {
+          const depGroup = this.findGroupForProject(dep.target);
+          if (
+            depGroup &&
+            depGroup !== releaseGroup.name &&
+            this.processedGroups.has(depGroup)
+          ) {
+            const depGroupBumpType = await this.getGroupBumpType(depGroup);
+
+            // If a dependency group has been bumped, determine if it should trigger a bump in this group
+            if (depGroupBumpType !== 'none') {
+              bumpedByDependency = true;
+              console.log(
+                `Bumping project ${project} due to dependency group ${depGroup} being bumped.`
+              );
+              const depBumpType = this.determineSideEffectBump(
+                releaseGroup,
+                depGroupBumpType
+              );
+              await this.bumpVersionForProject(project, depBumpType);
+              this.bumpedProjects.add(project);
+
+              // Update any dependencies in the manifest
+              await this.updateDependenciesForProject(project);
+            }
+          }
+        }
+      }
+
+      // If any project in the group was bumped due to dependency changes, we must bump all projects in the fixed group
+      if (bumpedByDependency) {
+        for (const project of releaseGroup.projects) {
+          if (!this.bumpedProjects.has(project)) {
+            console.log(
+              `Bumping project ${project} because it is part of the fixed group.`
+            );
+            await this.bumpVersionForProject(project, 'patch'); // Ensure the bump for remaining projects
+            this.bumpedProjects.add(project);
+            await this.updateDependenciesForProject(project);
+          }
+        }
+      }
+
+      return bumpedByDependency;
     }
 
-    let bumped = false;
     const newVersion = await this.calculateNewVersion(firstProject, bumpType);
 
-    // First, update versions for all projects
+    // First, update versions for all projects in the fixed group
     for (const project of releaseGroup.projects) {
       const manifestActions = this.projectsToManifestActions.get(project);
       if (!manifestActions) {
@@ -305,7 +356,7 @@ Valid values are: ${validReleaseVersionPrefixes
       }
     }
 
-    // Then, update dependencies for all projects
+    // Then, update dependencies for all projects in the fixed group
     if (bumped) {
       for (const project of releaseGroup.projects) {
         await this.updateDependenciesForProject(project);
@@ -552,30 +603,43 @@ Valid values are: ${validReleaseVersionPrefixes
     if (!manifestActions) {
       throw new Error(`No manifest actions found for project ${projectName}`);
     }
+
+    // Log manifest retrieval
+    console.log(`Retrieving manifest data for project: ${projectName}`);
     const manifestData = await manifestActions.getInitialManifestData(
       this.tree
     );
     const currentVersion = manifestData.currentVersion;
 
+    // Log the current and new version
+    console.log(`Current version for ${projectName}: ${currentVersion}`);
     const newVersion = deriveNewSemverVersion(currentVersion, bumpType);
     console.log(`New version for ${projectName}: ${newVersion}`);
 
+    // Log manifest writing step
+    console.log(`Writing new version to manifest for project: ${projectName}`);
     await manifestActions.writeVersionToManifest(this.tree, newVersion);
 
     // Update version data
+    console.log(`Updating version data for project: ${projectName}`);
     this.versionData.set(projectName, {
       currentVersion,
       newVersion,
       dependentProjects: await this.getDependentProjects(projectName),
     });
 
+    // Log project bump completion
     this.bumpedProjects.add(projectName);
+    console.log(`Project ${projectName} successfully bumped to ${newVersion}`);
 
     // Only update dependencies if updateDependents is 'auto'
     if (this.updateDependents === 'auto') {
+      console.log(`Updating dependencies for dependents of ${projectName}`);
       await this.updateDependenciesForDependents(projectName);
 
       const dependents = this.getDependentsForProject(projectName);
+      console.log(`Dependents of ${projectName}: ${dependents}`);
+
       for (const dependent of dependents) {
         if (
           this.allProjectsToProcess.has(dependent) &&
@@ -621,6 +685,7 @@ Valid values are: ${validReleaseVersionPrefixes
   ): Promise<VersionData['dependentProjects']> {
     const dependents: VersionData['dependentProjects'] = [];
     const dependencies = this.projectGraph.dependencies || {};
+    console.log({ dependencies });
 
     for (const [source, deps] of Object.entries(dependencies)) {
       if (!Array.isArray(deps)) continue;
@@ -633,6 +698,7 @@ Valid values are: ${validReleaseVersionPrefixes
               const manifestData = await manifestActions.getInitialManifestData(
                 this.tree
               );
+              console.log({ manifestData });
               if (manifestData && manifestData.dependencies) {
                 const dependencyCollection =
                   Object.keys(manifestData.dependencies).find(
@@ -640,9 +706,11 @@ Valid values are: ${validReleaseVersionPrefixes
                       manifestData.dependencies[key] &&
                       manifestData.dependencies[key][project]
                   ) || 'dependencies';
+                console.log({ dependencyCollection });
                 const rawVersionSpec =
                   manifestData.dependencies[dependencyCollection]?.[project] ||
                   '';
+                console.log({ project, rawVersionSpec });
 
                 dependents.push({
                   source,
@@ -651,6 +719,8 @@ Valid values are: ${validReleaseVersionPrefixes
                   dependencyCollection,
                   rawVersionSpec,
                 });
+
+                console.log({ project, dependents });
               }
             } catch (error) {
               console.error(
@@ -674,6 +744,11 @@ Valid values are: ${validReleaseVersionPrefixes
     let groupBumped = false;
     let bumpType: SemverBumpType = 'none';
 
+    console.log(`Processing group: ${releaseGroupName}`);
+    console.log(
+      `Checking if group depends on changed group: ${changedDependencyGroup}`
+    );
+
     if (releaseGroup.projectsRelationship === 'fixed') {
       // For fixed groups, we only need to check one project
       const project = releaseGroup.projects[0];
@@ -682,10 +757,16 @@ Valid values are: ${validReleaseVersionPrefixes
         (dep) => this.findGroupForProject(dep.target) === changedDependencyGroup
       );
 
+      console.log(`Fixed group dependencies: ${JSON.stringify(dependencies)}`);
+
       if (hasDependencyInChangedGroup) {
         const dependencyBumpType = await this.getGroupBumpType(
           changedDependencyGroup
         );
+        console.log(
+          `Dependency bump type for group ${changedDependencyGroup}: ${dependencyBumpType}`
+        );
+
         bumpType = this.determineSideEffectBump(
           releaseGroup,
           dependencyBumpType
@@ -701,10 +782,18 @@ Valid values are: ${validReleaseVersionPrefixes
             this.findGroupForProject(dep.target) === changedDependencyGroup
         );
 
+        console.log(
+          `Project ${project} dependencies: ${JSON.stringify(dependencies)}`
+        );
+
         if (hasDependencyInChangedGroup) {
           const dependencyBumpType = await this.getGroupBumpType(
             changedDependencyGroup
           );
+          console.log(
+            `Dependency bump type for project ${project}: ${dependencyBumpType}`
+          );
+
           const projectBumpType = this.determineSideEffectBump(
             releaseGroup,
             dependencyBumpType
@@ -714,13 +803,17 @@ Valid values are: ${validReleaseVersionPrefixes
             if (!this.bumpedProjects.has(project)) {
               await this.bumpVersionForProject(project, projectBumpType);
               this.bumpedProjects.add(project);
+              console.log(`Bumped version for project ${project}`);
             }
           }
         }
       }
     }
 
-    if (groupBumped && releaseGroup.projectsRelationship === 'fixed') {
+    if (groupBumped) {
+      console.log(
+        `Group ${releaseGroupName} was bumped due to dependencies in group ${changedDependencyGroup}`
+      );
       for (const project of releaseGroup.projects) {
         if (!this.bumpedProjects.has(project)) {
           await this.bumpVersionForProject(project, bumpType);
