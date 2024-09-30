@@ -59,6 +59,8 @@ export interface VersionData {
 
 export const validReleaseVersionPrefixes = ['auto', '', '~', '^', '='] as const;
 
+// TODO: Can we make the implementation more efficient if we sort the projects from the projectGraph topologically upfront?
+
 export class ReleaseGroupProcessor {
   private groupGraph: Map<string, GroupNode> = new Map();
   private processedGroups: Set<string> = new Set();
