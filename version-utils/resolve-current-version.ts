@@ -1,9 +1,10 @@
 // TODO: Fix these before merging
 /* eslint-disable @nx/enforce-module-boundaries,@typescript-eslint/no-restricted-imports */
 import { ReleaseGroupWithName } from 'nx/src/command-line/release/config/filter-release-groups';
+import { getLatestGitTagForPattern } from 'nx/src/command-line/release/utils/git';
 import { ReleaseVersionGeneratorSchema } from 'nx/src/command-line/release/version';
 import { ProjectGraphProjectNode, Tree } from 'nx/src/devkit-exports';
-import { ManifestActions } from 'nxn/src/command-line/release/version-utils/flexible-version-management';
+import { ManifestActions } from './flexible-version-management';
 
 class ProjectLogger {
   constructor(private projectName: string) {}
@@ -45,10 +46,11 @@ export async function resolveCurrentVersion(
         .currentVersionResolverMetadata as ReleaseVersionGeneratorSchema['currentVersionResolverMetadata']) ??
       {};
   } else {
-    currentVersionResolver =
-      releaseGroup.version.generatorOptions.currentVersionResolver;
+    currentVersionResolver = releaseGroup.version.generatorOptions
+      .currentVersionResolver as ReleaseVersionGeneratorSchema['currentVersionResolver'];
     currentVersionResolverMetadata =
-      releaseGroup.version.generatorOptions.currentVersionResolverMetadata ??
+      (releaseGroup.version.generatorOptions
+        .currentVersionResolverMetadata as ReleaseVersionGeneratorSchema['currentVersionResolverMetadata']) ??
       {};
   }
 
@@ -60,14 +62,19 @@ export async function resolveCurrentVersion(
   switch (currentVersionResolver) {
     // TODO: Implement registry resolver
     case 'registry': {
-      return resolveCurrentVersionFromDisk(tree, logger, manifestActions);
+      return resolveCurrentVersionFromDisk(tree, manifestActions, logger);
     }
     case 'disk': {
-      return resolveCurrentVersionFromDisk(tree, logger, manifestActions);
+      return resolveCurrentVersionFromDisk(tree, manifestActions, logger);
     }
-    // TODO: Implement git-tag resolver
     case 'git-tag': {
-      return resolveCurrentVersionFromDisk(tree, logger, manifestActions);
+      return resolveCurrentVersionFromGitTag(
+        tree,
+        projectGraphNode,
+        releaseGroup,
+        manifestActions,
+        logger
+      );
     }
     default:
       throw new Error(
@@ -78,13 +85,46 @@ export async function resolveCurrentVersion(
 
 export async function resolveCurrentVersionFromDisk(
   tree: Tree,
-  logger: ProjectLogger,
-  manifestActions: ManifestActions
+  manifestActions: ManifestActions,
+  logger: ProjectLogger
 ): Promise<string> {
   const currentVersion = await manifestActions.resolveCurrentVersion(tree);
   const manifestPath = manifestActions.getPrimaryManifestPath();
   logger.buffer(
     `📄 Resolved the current version as ${currentVersion} from manifest: ${manifestPath}`
+  );
+  return currentVersion;
+}
+
+export async function resolveCurrentVersionFromGitTag(
+  tree: Tree,
+  projectGraphNode: ProjectGraphProjectNode,
+  releaseGroup: ReleaseGroupWithName,
+  manifestActions: ManifestActions,
+  logger: ProjectLogger
+): Promise<string> {
+  const latestMatchingGitTag = await getLatestGitTagForPattern(
+    releaseGroup.releaseTagPattern,
+    {
+      projectName: projectGraphNode.name,
+    }
+  );
+  if (!latestMatchingGitTag) {
+    if (
+      releaseGroup.version.generatorOptions.fallbackCurrentVersionResolver ===
+      'disk'
+    ) {
+      return resolveCurrentVersionFromDisk(tree, manifestActions, logger);
+    } else {
+      throw new Error(
+        `No git tags matching pattern "${releaseGroup.releaseTagPattern}" for project "${projectGraphNode.name}" were found. You will need to create an initial matching tag to use as a base for determining the next version. Alternatively, you can use the --first-release option or set "release.version.generatorOptions.fallbackCurrentVersionResolver" to "disk" in order to fallback to the version on disk when no matching git tags are found.`
+      );
+    }
+  }
+
+  const currentVersion = latestMatchingGitTag.extractedVersion;
+  logger.buffer(
+    `📄 Resolved the current version as ${currentVersion} from git tag "${latestMatchingGitTag.tag}".`
   );
   return currentVersion;
 }

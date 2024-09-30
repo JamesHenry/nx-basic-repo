@@ -18,6 +18,11 @@ jest.doMock('./flexible-version-management', () => ({
   resolveManifestActionsForProject: mockResolveManifestActionsForProject,
 }));
 
+let mockResolveCurrentVersion = jest.fn();
+jest.doMock('./resolve-current-version', () => ({
+  resolveCurrentVersion: mockResolveCurrentVersion,
+}));
+
 // This does not work with the mocking if we use import
 const { ReleaseGroupProcessor } = require('./release-group-processor') as {
   ReleaseGroupProcessor: typeof import('./release-group-processor').ReleaseGroupProcessor;
@@ -59,7 +64,8 @@ describe('ReleaseGroupProcessor', () => {
           version: {
             conventionalCommits: true,
           },
-        }
+        },
+        mockResolveCurrentVersion
       );
 
     const processor = new ReleaseGroupProcessor(
@@ -114,7 +120,8 @@ describe('ReleaseGroupProcessor', () => {
           version: {
             conventionalCommits: true,
           },
-        }
+        },
+        mockResolveCurrentVersion
       );
 
     const processor = new ReleaseGroupProcessor(
@@ -173,7 +180,8 @@ describe('ReleaseGroupProcessor', () => {
           version: {
             conventionalCommits: true,
           },
-        }
+        },
+        mockResolveCurrentVersion
       );
 
     const processor = new ReleaseGroupProcessor(
@@ -238,7 +246,8 @@ describe('ReleaseGroupProcessor', () => {
             version: {
               conventionalCommits: true,
             },
-          }
+          },
+          mockResolveCurrentVersion
         );
 
       processor = new ReleaseGroupProcessor(
@@ -342,7 +351,8 @@ describe('ReleaseGroupProcessor', () => {
             version: {
               conventionalCommits: true,
             },
-          }
+          },
+          mockResolveCurrentVersion
         );
 
       const processor = new ReleaseGroupProcessor(
@@ -419,7 +429,8 @@ describe('ReleaseGroupProcessor', () => {
               version: {
                 conventionalCommits: true,
               },
-            }
+            },
+            mockResolveCurrentVersion
           );
 
         // Initial state of rustLibA
@@ -524,7 +535,8 @@ describe('ReleaseGroupProcessor', () => {
               version: {
                 conventionalCommits: true,
               },
-            }
+            },
+            mockResolveCurrentVersion
           );
 
         // Initial state of rustLibA
@@ -720,7 +732,8 @@ describe('ReleaseGroupProcessor', () => {
               version: {
                 conventionalCommits: true,
               },
-            }
+            },
+            mockResolveCurrentVersion
           );
 
         processor = new ReleaseGroupProcessor(
@@ -864,7 +877,8 @@ describe('ReleaseGroupProcessor', () => {
                   updateDependents: 'never',
                 },
               },
-            }
+            },
+            mockResolveCurrentVersion
           );
 
         processor = new ReleaseGroupProcessor(
@@ -934,7 +948,8 @@ describe('ReleaseGroupProcessor', () => {
                   updateDependents: 'never',
                 },
               },
-            }
+            },
+            mockResolveCurrentVersion
           );
 
         processor = new ReleaseGroupProcessor(

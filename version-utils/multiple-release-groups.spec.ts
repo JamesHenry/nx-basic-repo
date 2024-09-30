@@ -18,6 +18,11 @@ jest.doMock('./flexible-version-management', () => ({
   resolveManifestActionsForProject: mockResolveManifestActionsForProject,
 }));
 
+let mockResolveCurrentVersion = jest.fn();
+jest.doMock('./resolve-current-version', () => ({
+  resolveCurrentVersion: mockResolveCurrentVersion,
+}));
+
 const { ReleaseGroupProcessor } = require('./release-group-processor') as {
   ReleaseGroupProcessor: typeof import('./release-group-processor').ReleaseGroupProcessor;
 };
@@ -56,7 +61,8 @@ describe('Multiple Release Groups', () => {
             version: {
               conventionalCommits: true,
             },
-          }
+          },
+          mockResolveCurrentVersion
         );
 
       mockDeriveSpecifierFromGit.mockImplementation((projectName) => {
@@ -138,7 +144,8 @@ describe('Multiple Release Groups', () => {
             version: {
               conventionalCommits: true,
             },
-          }
+          },
+          mockResolveCurrentVersion
         );
 
       mockDeriveSpecifierFromGit.mockImplementation((projectName) => {
@@ -219,7 +226,8 @@ describe('Multiple Release Groups', () => {
             version: {
               conventionalCommits: true,
             },
-          }
+          },
+          mockResolveCurrentVersion
         );
 
       mockDeriveSpecifierFromGit.mockImplementation((projectName) => {
@@ -298,7 +306,8 @@ describe('Multiple Release Groups', () => {
             version: {
               conventionalCommits: true,
             },
-          }
+          },
+          mockResolveCurrentVersion
         );
 
       mockDeriveSpecifierFromGit.mockImplementation((projectName) => {
@@ -367,11 +376,16 @@ describe('Multiple Release Groups', () => {
 
     it('should correctly version projects across group boundaries', async () => {
       const { nxReleaseConfig, projectGraph, releaseGroups } =
-        await createNxReleaseConfigAndPopulateWorkspace(tree, graphDefinition, {
-          version: {
-            conventionalCommits: true,
+        await createNxReleaseConfigAndPopulateWorkspace(
+          tree,
+          graphDefinition,
+          {
+            version: {
+              conventionalCommits: true,
+            },
           },
-        });
+          mockResolveCurrentVersion
+        );
 
       mockDeriveSpecifierFromGit.mockImplementation((projectName) => {
         // pkg-a should still be bumped to 1.0.1 purely because of its dependency on pkg-c from the other group
@@ -432,11 +446,16 @@ describe('Multiple Release Groups', () => {
 
     it('should pick an appropriate overall version across group boundaries when a project is influenced by both a direct specifier and a dependency bump', async () => {
       const { nxReleaseConfig, projectGraph, releaseGroups } =
-        await createNxReleaseConfigAndPopulateWorkspace(tree, graphDefinition, {
-          version: {
-            conventionalCommits: true,
+        await createNxReleaseConfigAndPopulateWorkspace(
+          tree,
+          graphDefinition,
+          {
+            version: {
+              conventionalCommits: true,
+            },
           },
-        });
+          mockResolveCurrentVersion
+        );
 
       mockDeriveSpecifierFromGit.mockImplementation((projectName) => {
         // pkg-a should be bumped to 1.1.0 because its dependency on pkg-c causing a patch is lower than its own specifier of minor
@@ -514,7 +533,8 @@ describe('Multiple Release Groups', () => {
               version: {
                 conventionalCommits: true,
               },
-            }
+            },
+            mockResolveCurrentVersion
           );
 
         mockDeriveSpecifierFromGit.mockImplementation((projectName) => {
@@ -586,7 +606,8 @@ describe('Multiple Release Groups', () => {
               version: {
                 conventionalCommits: true,
               },
-            }
+            },
+            mockResolveCurrentVersion
           );
 
         mockDeriveSpecifierFromGit.mockImplementation((projectName) => {
@@ -659,7 +680,8 @@ describe('Multiple Release Groups', () => {
               version: {
                 conventionalCommits: true,
               },
-            }
+            },
+            mockResolveCurrentVersion
           );
 
         mockDeriveSpecifierFromGit.mockImplementation((projectName) => {

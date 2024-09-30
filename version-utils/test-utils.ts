@@ -20,7 +20,8 @@ import { ManifestActions, ManifestData } from './flexible-version-management';
 export async function createNxReleaseConfigAndPopulateWorkspace(
   tree: Tree,
   graphDefinition: string,
-  additionalNxReleaseConfig: Exclude<NxJsonConfiguration['release'], 'groups'>
+  additionalNxReleaseConfig: Exclude<NxJsonConfiguration['release'], 'groups'>,
+  mockResolveCurrentVersion?: jest.Mock
 ) {
   const graph = parseGraphDefinition(graphDefinition);
   const { groups, projectGraph } = setupGraph(tree, graph);
@@ -46,6 +47,16 @@ export async function createNxReleaseConfigAndPopulateWorkspace(
   if (filterError) {
     throw filterError;
   }
+
+  // Mock the implementation of resolveCurrentVersion to reliably return the version of the project based on our graph definition
+  mockResolveCurrentVersion?.mockImplementation((_, { name }) => {
+    for (const [projectName, project] of Object.entries(graph.projects)) {
+      if (projectName === name) {
+        return (project as any).version;
+      }
+    }
+    throw new Error(`Unknown project name in test utils: ${name}`);
+  });
 
   return {
     nxReleaseConfig: nxReleaseConfig!,

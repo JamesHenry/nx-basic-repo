@@ -1,6 +1,6 @@
 import { ProjectGraphProjectNode, Tree } from 'nx/src/devkit-exports';
 import { createTreeWithEmptyWorkspace } from 'nx/src/devkit-testing-exports';
-import { ManifestActions } from 'nxn/src/command-line/release/version-utils/flexible-version-management';
+import { ManifestActions } from './flexible-version-management';
 import { resolveCurrentVersion } from './resolve-current-version';
 
 describe('resolveCurrentVersion', () => {
@@ -57,8 +57,10 @@ describe('resolveCurrentVersion', () => {
       const currentVersion = await resolveCurrentVersion(
         tree,
         projectGraphNode,
-        releaseGroup,
-        new TestManifestActions(projectGraphNode)
+        // TODO: Fix types
+        releaseGroup as any,
+        // TODO: Fix types
+        new TestManifestActions(projectGraphNode) as any
       );
       expect(currentVersion).toBe('1.2.3');
     });
@@ -91,8 +93,10 @@ describe('resolveCurrentVersion', () => {
       const currentVersion = await resolveCurrentVersion(
         tree,
         projectGraphNode,
-        releaseGroup,
-        new TestManifestActions(projectGraphNode)
+        // TODO: Fix types
+        releaseGroup as any,
+        // TODO: Fix types
+        new TestManifestActions(projectGraphNode) as any
       );
       expect(currentVersion).toBe('1.2.3');
     });
