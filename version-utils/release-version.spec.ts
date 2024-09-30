@@ -172,7 +172,6 @@ describe('releaseVersionGenerator (ported tests)', () => {
         projects: Object.values(projectGraph.nodes),
         projectGraph,
         userGivenSpecifier: 'major',
-        currentVersionResolver: 'disk',
         releaseGroups,
       })
     ).toMatchInlineSnapshot(`
@@ -250,7 +249,6 @@ describe('releaseVersionGenerator (ported tests)', () => {
         projects: Object.values(projectGraph.nodes),
         projectGraph,
         userGivenSpecifier: 'major',
-        currentVersionResolver: 'disk',
       });
 
       expect(outputSpy).toHaveBeenCalledWith({
@@ -294,7 +292,6 @@ describe('releaseVersionGenerator (ported tests)', () => {
         projects: Object.values(projectGraph.nodes),
         projectGraph,
         userGivenSpecifier: 'major',
-        currentVersionResolver: 'disk',
       });
 
       expect(readJson(tree, 'my-app/package.json')).toMatchInlineSnapshot(`
@@ -341,7 +338,6 @@ describe('releaseVersionGenerator (ported tests)', () => {
         projects: Object.values(projectGraph.nodes),
         projectGraph,
         userGivenSpecifier: 'major',
-        currentVersionResolver: 'disk',
         releaseGroups,
       });
       expect(readJson(tree, 'my-lib/package.json').version).toEqual('1.0.0');
@@ -351,7 +347,6 @@ describe('releaseVersionGenerator (ported tests)', () => {
         projects: Object.values(projectGraph.nodes),
         projectGraph,
         userGivenSpecifier: 'minor',
-        currentVersionResolver: 'disk',
         releaseGroups,
       });
       expect(readJson(tree, 'my-lib/package.json').version).toEqual('1.1.0');
@@ -361,7 +356,6 @@ describe('releaseVersionGenerator (ported tests)', () => {
         projects: Object.values(projectGraph.nodes),
         projectGraph,
         userGivenSpecifier: 'patch',
-        currentVersionResolver: 'disk',
         releaseGroups,
       });
       expect(readJson(tree, 'my-lib/package.json').version).toEqual('1.1.1');
@@ -371,7 +365,6 @@ describe('releaseVersionGenerator (ported tests)', () => {
         projects: Object.values(projectGraph.nodes),
         projectGraph,
         userGivenSpecifier: '1.2.3' as SemverBumpType,
-        currentVersionResolver: 'disk',
         releaseGroups,
       });
       expect(readJson(tree, 'my-lib/package.json').version).toEqual('1.2.3');
@@ -403,7 +396,6 @@ describe('releaseVersionGenerator (ported tests)', () => {
         projects: Object.values(projectGraph.nodes),
         projectGraph,
         userGivenSpecifier: 'major',
-        currentVersionResolver: 'disk',
         releaseGroups,
       });
 
@@ -478,7 +470,6 @@ describe('releaseVersionGenerator (ported tests)', () => {
           projectGraph,
           // TODO: fix the need for as any
           userGivenSpecifier: '' as any,
-          currentVersionResolver: 'disk',
           releaseGroups,
         });
 
@@ -537,7 +528,6 @@ describe('releaseVersionGenerator (ported tests)', () => {
           projects: Object.values(projectGraph.nodes),
           projectGraph,
           userGivenSpecifier: '4.5.6' as SemverBumpType,
-          currentVersionResolver: 'disk',
           releaseGroups,
         });
 
@@ -601,7 +591,7 @@ describe('releaseVersionGenerator (ported tests)', () => {
     //     projects: [projectGraph.nodes['my-lib']],
     //     projectGraph,
     //     userGivenSpecifier: '9.9.9' as SemverBumpType,
-    //     currentVersionResolver: 'disk',
+
     //     releaseGroups,
     //   });
 
@@ -662,7 +652,6 @@ describe('releaseVersionGenerator (ported tests)', () => {
         projects: [projectGraph.nodes['my-lib']],
         projectGraph,
         userGivenSpecifier: '9.9.9' as SemverBumpType,
-        currentVersionResolver: 'disk',
         releaseGroups,
       });
 
@@ -723,7 +712,6 @@ describe('releaseVersionGenerator (ported tests)', () => {
         projects: [projectGraph.nodes['my-lib']],
         projectGraph,
         userGivenSpecifier: '9.9.9' as SemverBumpType,
-        currentVersionResolver: 'disk',
         releaseGroups,
       });
 
@@ -785,7 +773,6 @@ describe('releaseVersionGenerator (ported tests)', () => {
         projects: Object.values(projectGraph.nodes),
         projectGraph,
         userGivenSpecifier: 'v8.8.8' as SemverBumpType,
-        currentVersionResolver: 'disk',
         releaseGroups,
       });
 
@@ -877,7 +864,6 @@ describe('releaseVersionGenerator (ported tests)', () => {
         projects: Object.values(projectGraph.nodes),
         projectGraph,
         userGivenSpecifier: '9.9.9' as SemverBumpType,
-        currentVersionResolver: 'disk',
       });
 
       expect(readJson(tree, 'my-lib/package.json')).toMatchInlineSnapshot(`
@@ -944,7 +930,6 @@ describe('releaseVersionGenerator (ported tests)', () => {
         projects: Object.values(projectGraph.nodes),
         projectGraph,
         userGivenSpecifier: '9.9.9' as SemverBumpType,
-        currentVersionResolver: 'disk',
       });
 
       expect(readJson(tree, 'my-lib/package.json')).toMatchInlineSnapshot(`
@@ -1011,7 +996,6 @@ describe('releaseVersionGenerator (ported tests)', () => {
         projects: Object.values(projectGraph.nodes),
         projectGraph,
         userGivenSpecifier: '9.9.9' as SemverBumpType,
-        currentVersionResolver: 'disk',
       });
 
       expect(readJson(tree, 'my-lib/package.json')).toMatchInlineSnapshot(`
@@ -1078,7 +1062,6 @@ describe('releaseVersionGenerator (ported tests)', () => {
         projects: Object.values(projectGraph.nodes),
         projectGraph,
         userGivenSpecifier: '9.9.9' as SemverBumpType,
-        currentVersionResolver: 'disk',
       });
 
       expect(readJson(tree, 'my-lib/package.json')).toMatchInlineSnapshot(`
@@ -1146,7 +1129,6 @@ describe('releaseVersionGenerator (ported tests)', () => {
         projects: Object.values(projectGraph.nodes),
         projectGraph,
         userGivenSpecifier: '9.9.9' as SemverBumpType,
-        currentVersionResolver: 'disk',
       });
 
       expect(readJson(tree, 'my-lib/package.json')).toMatchInlineSnapshot(`
@@ -1218,7 +1200,6 @@ describe('releaseVersionGenerator (ported tests)', () => {
         projects: Object.values(projectGraph.nodes), // version all projects
         projectGraph,
         userGivenSpecifier: 'major' as SemverBumpType,
-        currentVersionResolver: 'disk',
       });
 
       expect(outputSpy).toHaveBeenCalledWith({
@@ -1261,7 +1242,6 @@ Valid values are: "auto", "", "~", "^", "="`,
         projects: [projectGraph.nodes['my-lib']],
         projectGraph,
         userGivenSpecifier: '9.9.9' as SemverBumpType,
-        currentVersionResolver: 'disk',
         releaseGroups,
       });
 
@@ -1346,7 +1326,6 @@ Valid values are: "auto", "", "~", "^", "="`,
         projects: [projectGraph.nodes['my-lib']],
         projectGraph,
         userGivenSpecifier: '9.9.9' as SemverBumpType,
-        currentVersionResolver: 'disk',
         releaseGroups,
       });
 
@@ -1475,7 +1454,6 @@ Valid values are: "auto", "", "~", "^", "="`,
             projects: [projectGraph.nodes['package-a']], // version only package-a
             projectGraph,
             userGivenSpecifier: '2.0.0' as SemverBumpType,
-            currentVersionResolver: 'disk',
           })
         ).toMatchInlineSnapshot(`
         {
@@ -1562,7 +1540,6 @@ Valid values are: "auto", "", "~", "^", "="`,
             ],
             projectGraph,
             userGivenSpecifier: '2.0.0' as SemverBumpType,
-            currentVersionResolver: 'disk',
           })
         ).toMatchInlineSnapshot(`
         {
@@ -1662,7 +1639,6 @@ Valid values are: "auto", "", "~", "^", "="`,
             projects: [projectGraph.nodes['package-a']], // version only package-a
             projectGraph,
             userGivenSpecifier: '2.0.0' as SemverBumpType,
-            currentVersionResolver: 'disk',
           })
         ).toMatchInlineSnapshot(`
         {
@@ -1765,7 +1741,6 @@ Valid values are: "auto", "", "~", "^", "="`,
           ],
           projectGraph,
           userGivenSpecifier: '2.0.0' as SemverBumpType,
-          currentVersionResolver: 'disk',
         })
       ).toMatchInlineSnapshot(`
         {
