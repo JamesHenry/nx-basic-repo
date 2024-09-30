@@ -1,6 +1,6 @@
 // TODO: Fix these before merging
 /* eslint-disable @nx/enforce-module-boundaries,@typescript-eslint/no-restricted-imports */
-import { output, type ProjectGraph, type Tree } from '@nx/devkit';
+import { output, type ProjectGraph, type Tree } from 'nx/src/devkit-exports';
 import {
   IMPLICIT_DEFAULT_RELEASE_GROUP,
   type NxReleaseConfig,
@@ -141,7 +141,8 @@ export class ReleaseGroupProcessor {
             if (
               releaseGroupNode.group.version?.generatorOptions?.versionPrefix &&
               !validReleaseVersionPrefixes.includes(
-                releaseGroupNode.group.version?.generatorOptions?.versionPrefix
+                releaseGroupNode.group.version?.generatorOptions
+                  ?.versionPrefix as any
               )
             ) {
               throw new Error(

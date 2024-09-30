@@ -7,7 +7,7 @@ import {
   ProjectGraph,
   Tree,
   writeJson,
-} from '@nx/devkit';
+} from 'nx/src/devkit-exports';
 import { join } from 'node:path';
 import {
   createNxReleaseConfig,

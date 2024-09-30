@@ -1,7 +1,7 @@
 // TODO: Fix these before merging
 /* eslint-disable @nx/enforce-module-boundaries,@typescript-eslint/no-restricted-imports */
-import { readJson, Tree, updateJson } from '@nx/devkit';
-import { createTreeWithEmptyWorkspace } from '@nx/devkit/testing';
+import { readJson, Tree, updateJson } from 'nx/src/devkit-exports';
+import { createTreeWithEmptyWorkspace } from 'nx/src/devkit-testing-exports';
 import { JsManifestActions } from './flexible-version-management';
 import {
   createNxReleaseConfigAndPopulateWorkspace,

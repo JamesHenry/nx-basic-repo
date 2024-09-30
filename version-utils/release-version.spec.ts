@@ -7,8 +7,8 @@ import {
   Tree,
   updateJson,
   writeJson,
-} from '@nx/devkit';
-import { createTreeWithEmptyWorkspace } from '@nx/devkit/testing';
+} from 'nx/src/devkit-exports';
+import { createTreeWithEmptyWorkspace } from 'nx/src/devkit-testing-exports';
 import enquirer from 'enquirer';
 import { NxReleaseConfig } from 'nx/src/command-line/release/config/config';
 import { ReleaseGroupWithName } from 'nx/src/command-line/release/config/filter-release-groups';
@@ -35,15 +35,15 @@ const processExitSpy = jest
   });
 
 const mockDetectPackageManager = jest.fn();
-jest.doMock('@nx/devkit', () => {
-  const devkit = jest.requireActual('@nx/devkit');
+jest.doMock('nx/src/devkit-exports', () => {
+  const devkit = jest.requireActual('nx/src/devkit-exports');
   return {
     ...devkit,
     detectPackageManager: mockDetectPackageManager,
   };
 });
 
-import { output } from '@nx/devkit';
+import { output } from 'nx/src/devkit-exports';
 
 jest.mock('enquirer');
 
@@ -471,6 +471,7 @@ describe('releaseVersionGenerator (ported tests)', () => {
   describe('independent release group', () => {
     describe('specifierSource: prompt', () => {
       it(`should appropriately prompt for each project independently and apply the version updates across all manifest files`, async () => {
+        // @ts-ignore
         enquirer.prompt = jest
           .fn()
           // First project will be minor

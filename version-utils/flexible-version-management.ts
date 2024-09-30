@@ -5,8 +5,7 @@ import {
   readJson,
   Tree,
   updateJson,
-} from '@nx/devkit';
-import { resolveVersionSpec } from '@nx/js/src/generators/release-version/utils/resolve-version-spec';
+} from 'nx/src/devkit-exports';
 import { join } from 'node:path';
 import { ReleaseGroupWithName } from 'nx/src/command-line/release/config/filter-release-groups';
 import { deriveNewSemverVersion } from 'nx/src/command-line/release/utils/semver';
@@ -194,6 +193,12 @@ To fix this you will either need to add a package.json file at that location, or
   private parseDependencies(
     packageJson: any
   ): Record<string, Record<string, string>> {
+    // TODO: Refactor this so that the whole JS manifest actions is dynamically loaded from @nx/js
+    const {
+      resolveVersionSpec,
+      // nx-ignore-next-line
+    } = require('@nx/js/src/generators/release-version/utils/resolve-version-spec');
+
     const result: Record<string, Record<string, string>> = {};
     const dependencyTypes = [
       'dependencies',

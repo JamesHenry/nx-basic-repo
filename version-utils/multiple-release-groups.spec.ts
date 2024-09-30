@@ -1,5 +1,7 @@
-import { Tree } from '@nx/devkit';
-import { createTreeWithEmptyWorkspace } from '@nx/devkit/testing';
+// TODO: Fix these before merging
+/* eslint-disable @nx/enforce-module-boundaries,@typescript-eslint/no-restricted-imports */
+import { Tree } from 'nx/src/devkit-exports';
+import { createTreeWithEmptyWorkspace } from 'nx/src/devkit-testing-exports';
 import {
   createNxReleaseConfigAndPopulateWorkspace,
   ExampleRustManifestActions,
