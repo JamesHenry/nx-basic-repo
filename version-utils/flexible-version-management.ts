@@ -54,8 +54,9 @@ export async function resolveManifestActionsForProject(
   if (!JsManifestActions) {
     // TODO: This string should probably be applied in config.ts like with other things, so that it's always set if needed,
     // although we still want to preserve some caching when we do that
-    // nx-ignore-next-line
-    const ManifestActionsClass = require('@nx/js/src/generators/release-version/manifest-actions');
+    const ManifestActionsClass =
+      // nx-ignore-next-line
+      require('@nxn/js/src/generators/release-version/manifest-actions').default;
     JsManifestActions = ManifestActionsClass;
   }
   const manifestActions = new JsManifestActions(projectGraphNode);
@@ -73,6 +74,12 @@ export abstract class ManifestActions {
   protected initialManifestData: ManifestData | null = null;
 
   constructor(protected projectGraphNode: ProjectGraphProjectNode) {}
+
+  /**
+   * Returns the primary manifest path for the project,
+   * such as a package.json/Cargo.toml/etc.
+   */
+  abstract getPrimaryManifestPath(): string;
 
   /**
    * Implementation details of resolving a project's manifest file,

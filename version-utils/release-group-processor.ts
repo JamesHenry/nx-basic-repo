@@ -14,6 +14,7 @@ import {
   resolveManifestActionsForProject,
   SemverBumpType,
 } from './flexible-version-management';
+import { resolveCurrentVersion } from './resolve-current-version';
 
 // TODO: Why is this coming through as any for consumers?
 import type { ReleaseGroupWithName } from 'nx/src/command-line/release/config/filter-release-groups';
@@ -68,6 +69,7 @@ export class ReleaseGroupProcessor {
   private projectsToProcess: Set<string>;
   private allProjectsToProcess: Set<string>;
   private userGivenSpecifier: string | undefined;
+  private cachedCurrentVersions: Map<string, string> = new Map();
 
   constructor(
     private tree: Tree,
@@ -138,6 +140,16 @@ export class ReleaseGroupProcessor {
               )
             );
 
+            // Cache the current version for the project
+            const currentVersion = await resolveCurrentVersion(
+              this.tree,
+              projectGraphNode,
+              releaseGroupNode.group,
+              // TODO: tmp workaround for type mismatch
+              this.projectsToManifestActions.get(projectName) as any
+            );
+            this.cachedCurrentVersions.set(projectName, currentVersion);
+
             if (
               releaseGroupNode.group.version?.generatorOptions?.versionPrefix &&
               !validReleaseVersionPrefixes.includes(
@@ -189,7 +201,6 @@ Valid values are: ${validReleaseVersionPrefixes
           title: e.message,
         });
       }
-      console.log({e });
       process.exit(1);
     }
   }
@@ -272,7 +283,6 @@ Valid values are: ${validReleaseVersionPrefixes
       releaseGroup,
       firstProject
     );
-    console.log({ firstProject, bumpType });
 
     if (bumpType === 'none') {
       // No direct bump for this group, but we may still need to bump if a dependency group has been bumped
@@ -338,10 +348,12 @@ Valid values are: ${validReleaseVersionPrefixes
       }
 
       try {
-        const manifestData = await manifestActions.getInitialManifestData(
-          this.tree
-        );
-        const currentVersion = manifestData.currentVersion;
+        const currentVersion = this.cachedCurrentVersions.get(project);
+        if (!currentVersion) {
+          throw new Error(
+            `Unexpected error: No cached current version found for project ${project}, please report this as a bug`
+          );
+        }
 
         await this.setProjectVersion(project, newVersion);
         this.bumpedProjects.add(project);
@@ -486,11 +498,13 @@ Valid values are: ${validReleaseVersionPrefixes
     project: string,
     bumpType: SemverBumpType
   ): Promise<string> {
-    const manifestActions = this.projectsToManifestActions.get(project);
-    if (!manifestActions) {
-      throw new Error(`No manifest actions found for project ${project}`);
+    const currentVersion = this.cachedCurrentVersions.get(project);
+    if (!currentVersion) {
+      throw new Error(
+        `Unexpected error: No cached current version found for project ${project}, please report this as a bug`
+      );
     }
-    return await manifestActions.determineSemverVersion(this.tree, bumpType);
+    return deriveNewSemverVersion(currentVersion, bumpType);
   }
 
   private async setProjectVersion(
@@ -606,12 +620,13 @@ Valid values are: ${validReleaseVersionPrefixes
       throw new Error(`No manifest actions found for project ${projectName}`);
     }
 
-    // Log manifest retrieval
-    console.log(`Retrieving manifest data for project: ${projectName}`);
-    const manifestData = await manifestActions.getInitialManifestData(
-      this.tree
-    );
-    const currentVersion = manifestData.currentVersion;
+    // Use the cached current version
+    const currentVersion = this.cachedCurrentVersions.get(projectName);
+    if (!currentVersion) {
+      throw new Error(
+        `Unexpected error: No cached current version found for project ${projectName}, please report this as a bug`
+      );
+    }
 
     // Log the current and new version
     console.log(`Current version for ${projectName}: ${currentVersion}`);
@@ -687,7 +702,6 @@ Valid values are: ${validReleaseVersionPrefixes
   ): Promise<VersionData['dependentProjects']> {
     const dependents: VersionData['dependentProjects'] = [];
     const dependencies = this.projectGraph.dependencies || {};
-    console.log({ dependencies });
 
     for (const [source, deps] of Object.entries(dependencies)) {
       if (!Array.isArray(deps)) continue;
@@ -700,7 +714,6 @@ Valid values are: ${validReleaseVersionPrefixes
               const manifestData = await manifestActions.getInitialManifestData(
                 this.tree
               );
-              console.log({ manifestData });
               if (manifestData && manifestData.dependencies) {
                 const dependencyCollection =
                   Object.keys(manifestData.dependencies).find(
@@ -708,11 +721,9 @@ Valid values are: ${validReleaseVersionPrefixes
                       manifestData.dependencies[key] &&
                       manifestData.dependencies[key][project]
                   ) || 'dependencies';
-                console.log({ dependencyCollection });
                 const rawVersionSpec =
                   manifestData.dependencies[dependencyCollection]?.[project] ||
                   '';
-                console.log({ project, rawVersionSpec });
 
                 dependents.push({
                   source,
@@ -721,8 +732,6 @@ Valid values are: ${validReleaseVersionPrefixes
                   dependencyCollection,
                   rawVersionSpec,
                 });
-
-                console.log({ project, dependents });
               }
             } catch (error) {
               console.error(

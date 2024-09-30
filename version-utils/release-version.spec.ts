@@ -89,14 +89,12 @@ async function releaseVersionGenerator(
     releaseGroups,
     projects,
     userGivenSpecifier,
-    currentVersionResolver,
   }: {
     nxReleaseConfig: NxReleaseConfig;
     projectGraph: ProjectGraph;
     releaseGroups: ReleaseGroupWithName[];
     projects: ProjectGraphProjectNode[];
     userGivenSpecifier: SemverBumpType;
-    currentVersionResolver: 'disk';
   }
 ): Promise<ReleaseVersionGeneratorResult> {
   const processor = new ReleaseGroupProcessor(

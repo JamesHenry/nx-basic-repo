@@ -72,6 +72,10 @@ interface CargoToml {
 }
 
 export class ExampleRustManifestActions extends ManifestActions {
+  getPrimaryManifestPath(): string {
+    return join(this.projectGraphNode.data.root, 'Cargo.toml');
+  }
+
   async ensureManifestExistsAtExpectedLocation(tree: Tree) {}
 
   private parseCargoToml(cargoString: string): CargoToml {

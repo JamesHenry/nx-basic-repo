@@ -52,6 +52,11 @@ export async function resolveCurrentVersion(
       {};
   }
 
+  // TODO: Remove the temp fallback once we have moved currentVersionResolver to a direct property of the release group
+  if (!currentVersionResolver) {
+    currentVersionResolver = 'disk';
+  }
+
   switch (currentVersionResolver) {
     // TODO: Implement registry resolver
     case 'registry': {
