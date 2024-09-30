@@ -1,5 +1,8 @@
 // TODO: Fix these before merging
 /* eslint-disable @nx/enforce-module-boundaries,@typescript-eslint/no-restricted-imports */
+import enquirer from 'enquirer';
+import { NxReleaseConfig } from 'nx/src/command-line/release/config/config';
+import { ReleaseGroupWithName } from 'nx/src/command-line/release/config/filter-release-groups';
 import {
   ProjectGraph,
   ProjectGraphProjectNode,
@@ -9,17 +12,11 @@ import {
   writeJson,
 } from 'nx/src/devkit-exports';
 import { createTreeWithEmptyWorkspace } from 'nx/src/devkit-testing-exports';
-import enquirer from 'enquirer';
-import { NxReleaseConfig } from 'nx/src/command-line/release/config/config';
-import { ReleaseGroupWithName } from 'nx/src/command-line/release/config/filter-release-groups';
-import {
-  JsManifestActions,
-  SemverBumpType,
-} from './flexible-version-management';
+import { SemverBumpType } from './flexible-version-management';
 import { VersionData } from './release-group-processor';
 import {
   createNxReleaseConfigAndPopulateWorkspace,
-  ExampleRustManifestActions,
+  mockResolveManifestActionsForProjectImplementation,
 } from './test-utils';
 
 const originalExit = process.exit;
@@ -138,32 +135,7 @@ describe('releaseVersionGenerator (ported tests)', () => {
     });
 
     mockResolveManifestActionsForProject.mockImplementation(
-      async (tree, releaseGroup, projectGraphNode) => {
-        const exampleRustManifestActions = '__EXAMPLE_RUST_MANIFEST_ACTIONS__';
-        // Project level
-        if (
-          projectGraphNode.data.release?.manifestActions ===
-          exampleRustManifestActions
-        ) {
-          const manifestActions = new ExampleRustManifestActions(
-            projectGraphNode
-          );
-          await manifestActions.ensureManifestExistsAtExpectedLocation(tree);
-          return manifestActions;
-        }
-        // Release group level
-        if (releaseGroup.manifestActions === exampleRustManifestActions) {
-          const manifestActions = new ExampleRustManifestActions(
-            projectGraphNode
-          );
-          await manifestActions.ensureManifestExistsAtExpectedLocation(tree);
-          return manifestActions;
-        }
-        // Default to JS implementation
-        const manifestActions = new JsManifestActions(projectGraphNode);
-        await manifestActions.ensureManifestExistsAtExpectedLocation(tree);
-        return manifestActions;
-      }
+      mockResolveManifestActionsForProjectImplementation
     );
   });
 

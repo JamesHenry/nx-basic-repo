@@ -4,7 +4,7 @@ import { Tree } from 'nx/src/devkit-exports';
 import { createTreeWithEmptyWorkspace } from 'nx/src/devkit-testing-exports';
 import {
   createNxReleaseConfigAndPopulateWorkspace,
-  ExampleRustManifestActions,
+  mockResolveManifestActionsForProjectImplementation,
 } from './test-utils';
 
 let mockDeriveSpecifierFromGit = jest.fn();
@@ -33,26 +33,7 @@ describe('Multiple Release Groups', () => {
     jest.resetAllMocks();
 
     mockResolveManifestActionsForProject.mockImplementation(
-      async (tree, releaseGroup, projectGraphNode) => {
-        const exampleRustManifestActions = '__EXAMPLE_RUST_MANIFEST_ACTIONS__';
-        if (
-          projectGraphNode.data.release?.manifestActions ===
-            exampleRustManifestActions ||
-          releaseGroup.manifestActions === exampleRustManifestActions
-        ) {
-          const manifestActions = new ExampleRustManifestActions(
-            projectGraphNode
-          );
-          await manifestActions.ensureManifestExistsAtExpectedLocation(tree);
-          return manifestActions;
-        }
-        const JsManifestActions = jest.requireActual(
-          './flexible-version-management'
-        ).JsManifestActions;
-        const manifestActions = new JsManifestActions(projectGraphNode);
-        await manifestActions.ensureManifestExistsAtExpectedLocation(tree);
-        return manifestActions;
-      }
+      mockResolveManifestActionsForProjectImplementation
     );
   });
 

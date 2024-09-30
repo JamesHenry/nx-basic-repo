@@ -189,6 +189,7 @@ Valid values are: ${validReleaseVersionPrefixes
           title: e.message,
         });
       }
+      console.log({e });
       process.exit(1);
     }
   }

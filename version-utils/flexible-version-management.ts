@@ -1,14 +1,8 @@
 // TODO: Fix these before merging
 /* eslint-disable @nx/enforce-module-boundaries,@typescript-eslint/no-restricted-imports */
-import {
-  ProjectGraphProjectNode,
-  readJson,
-  Tree,
-  updateJson,
-} from 'nx/src/devkit-exports';
-import { join } from 'node:path';
 import { ReleaseGroupWithName } from 'nx/src/command-line/release/config/filter-release-groups';
 import { deriveNewSemverVersion } from 'nx/src/command-line/release/utils/semver';
+import { ProjectGraphProjectNode, Tree } from 'nx/src/devkit-exports';
 
 export type SpecifierSource =
   | 'prompt'
@@ -28,6 +22,8 @@ export function deriveSpecifierFromVersionPlan(
 ): SemverBumpType {
   return 'patch';
 }
+
+let JsManifestActions;
 
 export async function resolveManifestActionsForProject(
   tree: Tree,
@@ -55,6 +51,13 @@ export async function resolveManifestActionsForProject(
   }
 
   // Otherwise, default to the JS implementation
+  if (!JsManifestActions) {
+    // TODO: This string should probably be applied in config.ts like with other things, so that it's always set if needed,
+    // although we still want to preserve some caching when we do that
+    // nx-ignore-next-line
+    const ManifestActionsClass = require('@nx/js/src/generators/release-version/manifest-actions');
+    JsManifestActions = ManifestActionsClass;
+  }
   const manifestActions = new JsManifestActions(projectGraphNode);
   await manifestActions.ensureManifestExistsAtExpectedLocation(tree);
   return manifestActions;
@@ -76,6 +79,13 @@ export abstract class ManifestActions {
    * such as a package.json/Cargo.toml/etc, from disk.
    */
   abstract readManifestData(tree: Tree): Promise<ManifestData>;
+
+  /**
+   * Implementation details of resolving a project's current version from the manifest file.
+   * Used as part of the current version resolver, and should throw if the version cannot be read
+   * from the manifest file for whatever reason.
+   */
+  abstract resolveCurrentVersion(tree: Tree): Promise<string>;
 
   /**
    * Implementation details of writing a newly derived version to a project's
@@ -118,110 +128,5 @@ export abstract class ManifestActions {
     const manifestData = await this.getInitialManifestData(tree);
     // TODO: Support preid
     return deriveNewSemverVersion(manifestData.currentVersion, bumpType);
-  }
-}
-
-export class JsManifestActions extends ManifestActions {
-  async ensureManifestExistsAtExpectedLocation(tree: Tree) {
-    const packageJsonPath = join(
-      this.projectGraphNode.data.root,
-      'package.json'
-    );
-    if (!tree.exists(packageJsonPath)) {
-      throw new Error(
-        `The project "${this.projectGraphNode.name}" does not have a package.json available at ${packageJsonPath}.
-
-To fix this you will either need to add a package.json file at that location, or configure "release" within your nx.json to exclude "${this.projectGraphNode.name}" from the current release group, or amend the packageRoot configuration to point to where the package.json should be.`
-      );
-    }
-  }
-
-  async readManifestData(tree: Tree): Promise<ManifestData> {
-    const packageJson = readJson(
-      tree,
-      join(this.projectGraphNode.data.root, 'package.json')
-    );
-    const dependencies = this.parseDependencies(packageJson);
-    return {
-      name: packageJson.name,
-      currentVersion: packageJson.version,
-      dependencies,
-    };
-  }
-
-  async writeVersionToManifest(tree: Tree, newVersion: string) {
-    updateJson(
-      tree,
-      join(this.projectGraphNode.data.root, 'package.json'),
-      (json) => {
-        json.version = newVersion;
-        return json;
-      }
-    );
-  }
-
-  async updateDependencies(
-    tree: Tree,
-    dependenciesToUpdate: Record<string, string>
-  ) {
-    updateJson(
-      tree,
-      join(this.projectGraphNode.data.root, 'package.json'),
-      (json) => {
-        const dependencyTypes = [
-          'dependencies',
-          'devDependencies',
-          'peerDependencies',
-          'optionalDependencies',
-        ];
-
-        for (const depType of dependencyTypes) {
-          if (json[depType]) {
-            for (const [dep, version] of Object.entries(dependenciesToUpdate)) {
-              if (json[depType][dep]) {
-                json[depType][dep] = version;
-              }
-            }
-          }
-        }
-
-        return json;
-      }
-    );
-  }
-
-  private parseDependencies(
-    packageJson: any
-  ): Record<string, Record<string, string>> {
-    // TODO: Refactor this so that the whole JS manifest actions is dynamically loaded from @nx/js
-    const {
-      resolveVersionSpec,
-      // nx-ignore-next-line
-    } = require('@nx/js/src/generators/release-version/utils/resolve-version-spec');
-
-    const result: Record<string, Record<string, string>> = {};
-    const dependencyTypes = [
-      'dependencies',
-      'devDependencies',
-      'peerDependencies',
-      'optionalDependencies',
-    ];
-
-    for (const depType of dependencyTypes) {
-      if (packageJson[depType]) {
-        result[depType] = {};
-        for (const [dep, spec] of Object.entries(packageJson[depType])) {
-          const resolvedSpec = resolveVersionSpec(
-            dep,
-            packageJson.version,
-            spec as string,
-            this.projectGraphNode.data.root
-          );
-          result[depType][dep] = resolvedSpec;
-        }
-      }
-    }
-
-    return result;
   }
 }

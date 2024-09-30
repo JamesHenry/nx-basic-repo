@@ -2,10 +2,9 @@
 /* eslint-disable @nx/enforce-module-boundaries,@typescript-eslint/no-restricted-imports */
 import { readJson, Tree, updateJson } from 'nx/src/devkit-exports';
 import { createTreeWithEmptyWorkspace } from 'nx/src/devkit-testing-exports';
-import { JsManifestActions } from './flexible-version-management';
 import {
   createNxReleaseConfigAndPopulateWorkspace,
-  ExampleRustManifestActions,
+  mockResolveManifestActionsForProjectImplementation,
 } from './test-utils';
 
 let mockDeriveSpecifierFromGit = jest.fn();
@@ -36,34 +35,8 @@ describe('ReleaseGroupProcessor', () => {
       json.release = {};
       return json;
     });
-
     mockResolveManifestActionsForProject.mockImplementation(
-      async (tree, releaseGroup, projectGraphNode) => {
-        const exampleRustManifestActions = '__EXAMPLE_RUST_MANIFEST_ACTIONS__';
-        // Project level
-        if (
-          projectGraphNode.data.release?.manifestActions ===
-          exampleRustManifestActions
-        ) {
-          const manifestActions = new ExampleRustManifestActions(
-            projectGraphNode
-          );
-          await manifestActions.ensureManifestExistsAtExpectedLocation(tree);
-          return manifestActions;
-        }
-        // Release group level
-        if (releaseGroup.manifestActions === exampleRustManifestActions) {
-          const manifestActions = new ExampleRustManifestActions(
-            projectGraphNode
-          );
-          await manifestActions.ensureManifestExistsAtExpectedLocation(tree);
-          return manifestActions;
-        }
-        // Default to JS implementation
-        const manifestActions = new JsManifestActions(projectGraphNode);
-        await manifestActions.ensureManifestExistsAtExpectedLocation(tree);
-        return manifestActions;
-      }
+      mockResolveManifestActionsForProjectImplementation
     );
   });
 

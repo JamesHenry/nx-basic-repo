@@ -5,6 +5,7 @@ import {
   createProjectFileMapUsingProjectGraph,
   NxJsonConfiguration,
   ProjectGraph,
+  ProjectGraphProjectNode,
   Tree,
   writeJson,
 } from 'nx/src/devkit-exports';
@@ -137,6 +138,10 @@ export class ExampleRustManifestActions extends ManifestActions {
       currentVersion,
       dependencies,
     };
+  }
+
+  async resolveCurrentVersion(tree: Tree): Promise<string> {
+    return (await this.readManifestData(tree)).currentVersion;
   }
 
   async writeVersionToManifest(tree: Tree, newVersion: string) {
@@ -369,4 +374,27 @@ function setupGraph(tree: any, graph: any) {
   }
 
   return { groups, projectGraph };
+}
+
+export async function mockResolveManifestActionsForProjectImplementation(
+  tree: Tree,
+  releaseGroup: any,
+  projectGraphNode: any
+) {
+  const exampleRustManifestActions = '__EXAMPLE_RUST_MANIFEST_ACTIONS__';
+  if (
+    projectGraphNode.data.release?.manifestActions ===
+      exampleRustManifestActions ||
+    releaseGroup.manifestActions === exampleRustManifestActions
+  ) {
+    const manifestActions = new ExampleRustManifestActions(projectGraphNode);
+    await manifestActions.ensureManifestExistsAtExpectedLocation(tree);
+    return manifestActions;
+  }
+  const JsManifestActions = jest.requireActual(
+    '@nxn/js/src/generators/release-version/manifest-actions'
+  ).default;
+  const manifestActions = new JsManifestActions(projectGraphNode);
+  await manifestActions.ensureManifestExistsAtExpectedLocation(tree);
+  return manifestActions;
 }
